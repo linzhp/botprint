@@ -19,12 +19,20 @@ imageHeight,
 stageWidth,
 stageHeight,
 enableMouseMove = false;
+
+// tracked ones
 var coordScene = new THREE.Scene();
 var projector = new THREE.Projector();
+var paused = false;
+var last;
+var down = false;
 var sx = 0, sy = 0;
 var rotation = 1;
 
 var controller;
+
+
+var cube;
 
 // vars accessible only by GUI
 var GUIOptions  = function() {
@@ -63,7 +71,7 @@ document.getElementById('controls-container').appendChild(gui.domElement );
 var settings = gui.addFolder('General');
 settings.add(guiOptions, 'stageSize',0.6,1,.1).onChange(doLayout);
 settings.add(this, 'saveImage').name('Save Design');
-//settings.open();
+
 
 var chassis = gui.addFolder('Chassis');
 
@@ -139,10 +147,11 @@ $(document).ready( function() {
 });
 
 function initWebGL() {
-
+    var width = renderer.domElement.width;
+    var height = renderer.domElement.height;
 
 	//init camera
-    camera = new THREE.PerspectiveCamera( 45, 16/9, 1, 10000 );
+    camera = new THREE.PerspectiveCamera( 45, width/height, 1, 10000 );
     camera.position.y = 30;
 
     //camera.position.z = -1000;
@@ -157,10 +166,25 @@ function initWebGL() {
         v(0, 0, -500), v(0, 0, 500), v(0,0,50), v(5,0,45), v(0,0,50), v(-5,0,45)
       );
 
-    var lineMat = new THREE.LineBasicMaterial({color: 0x888888, lineWidth: 1});
+    var lineMat = new THREE.LineBasicMaterial({color: 0x888888, lineWidth: .1});
     var line = new THREE.Line(lineGeo, lineMat);
     line.type = THREE.Lines;
-    coordScene.add(line);  
+    coordScene.add(line); 
+
+    // bind dummy cube to dat.gui
+    cube = new THREE.Mesh(
+          new THREE.CubeGeometry(20,20,20),
+          new THREE.MeshPhongMaterial({color: 0xFFFFFF})
+    );
+    cube.castShadow = cube.receiveShadow = true;
+    scene.add(cube);
+
+    chassis.add(cube.scale, 'x').min(0.1).max(10).step(0.1);
+    chassis.add(cube.scale, 'y', 0.1, 10, 0.1);
+    chassis.add(cube.scale, 'z', 0.1, 10, 0.1);
+    chassis.open();
+    $("#overlay").hide();
+
 
     var light = new THREE.SpotLight(0xFFFFFF);
     light.position.set(150, 200, 300);
@@ -174,26 +198,19 @@ function initWebGL() {
     var ambient = new THREE.AmbientLight(0x808080);
     scene.add(ambient);
 
-	//init renderer
-    if(!renderer){
-
-        renderer = new THREE.WebGLRenderer({
-		    antialias: true,
-		    clearAlpha: 1,
-		    sortObjects: false,
-		    sortElements: false
-	    });
-    }
-
-
 	doLayout();
-    stage.appendChild(renderer.domElement);
 
-    doController();
-    controller.createNew();
-	animate();
+    //doController();
+    //controller.createNew();
+    
+    // used for animating this stuff
+    last = new Date().getTime();
+
     camera.position.x = Math.cos(rotation)*50;
     camera.position.z = Math.sin(rotation)*160;
+
+    renderer.autoClear = false;
+    animate();
 }
 
 function doController(){
@@ -300,8 +317,16 @@ function onKeyDown(evt) {
 }
 
 function animate() {
+    if(!paused){
+        last = new Date().getTime();
+        var gl = renderer.getContext();
+        renderer.clear();
+        camera.lookAt( scene.position );
+        renderer.render(scene, camera);
+        renderer.render(coordScene, camera);
+
+    }
 	requestAnimationFrame(animate);
-	render();
 	stats.update();
 }
 
@@ -310,6 +335,13 @@ function render() {
 }
 
 function doLayout() {
+    // init WebGL renderer
+    if(!renderer){
+
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        stage.appendChild(renderer.domElement);
+       // renderer.clear();  
+    }
 
 	var winHeight, winWidth, controlsWidth, containerWidth;
 
@@ -344,12 +376,14 @@ function doLayout() {
 	//set webgl size
 	if (renderer) {
 		renderer.setSize(stageWidth, stageHeight);
-		camera.aspect = stageWidth / stageHeight;
-		camera.updateProjectionMatrix();
+        if(camera){
+		    camera.aspect = stageWidth / stageHeight;
+		    camera.updateProjectionMatrix();
+        }
 	}
 
 	stageCenterX = $('#stage').offset().left + stageWidth / 2;
-	stageCenterY = window.innerHeight / 2
+	stageCenterY = window.innerHeight / 2;
 }
 
 
