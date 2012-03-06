@@ -19,6 +19,12 @@ imageHeight,
 stageWidth,
 stageHeight,
 enableMouseMove = false;
+var coordScene = new THREE.Scene();
+var projector = new THREE.Projector();
+var sx = 0, sy = 0;
+var rotation = 1;
+
+var controller;
 
 // vars accessible only by GUI
 var GUIOptions  = function() {
@@ -28,7 +34,7 @@ var GUIOptions  = function() {
 };
 
 var chassis_selection = function(){
-    this.message = 'chassis.selection';
+    this.styles   = [];
     //this.explode = function() { ... }
     // this function will have images....
 }
@@ -55,19 +61,16 @@ var whe = new wheels_selection();
 var gui = new dat.GUI({ autoPlace: false });
 document.getElementById('controls-container').appendChild(gui.domElement );
 var settings = gui.addFolder('General');
-settings.add(guiOptions, 'stageSize',.2,1,.1).onChange(doLayout);
+settings.add(guiOptions, 'stageSize',0.6,1,.1).onChange(doLayout);
 settings.add(this, 'saveImage').name('Save Design');
-settings.open();
+//settings.open();
 
 var chassis = gui.addFolder('Chassis');
-chassis.add(ch, 'message');
 
 var wheels = gui.addFolder('Wheels');
 wheels.add(whe, 'message');
 
 
-//gui.add(guiOptions, 'stageSize',.2,1,.1).onChange(doLayout);
-//gui.add(this, 'saveImage').name('Save Design');
 
 /**
  * Init page
@@ -137,24 +140,137 @@ $(document).ready( function() {
 
 function initWebGL() {
 
+
 	//init camera
-    camera = new THREE.PerspectiveCamera(75, 16/9, 1, 3000);
-	camera.position.z = -1000;
+    camera = new THREE.PerspectiveCamera( 45, 16/9, 1, 10000 );
+    camera.position.y = 30;
+
+    //camera.position.z = -1000;
 	scene = new THREE.Scene();
     scene.add(camera);
+    coordScene.fog = new THREE.FogExp2(0xEEEEEE, 0.0035);
+
+    var lineGeo = new THREE.Geometry();
+      lineGeo.vertices.push(
+        v(-500, 0, 0), v(500, 0, 0), v(50,0,0), v(45,5,0), v(50,0,0), v(45,-5,0),
+        v(0, -500, 0), v(0, 500, 0), v(0,50,0), v(5,45,0), v(0,50,0), v(-5,45,0),
+        v(0, 0, -500), v(0, 0, 500), v(0,0,50), v(5,0,45), v(0,0,50), v(-5,0,45)
+      );
+
+    var lineMat = new THREE.LineBasicMaterial({color: 0x888888, lineWidth: 1});
+    var line = new THREE.Line(lineGeo, lineMat);
+    line.type = THREE.Lines;
+    coordScene.add(line);  
+
+    var light = new THREE.SpotLight(0xFFFFFF);
+    light.position.set(150, 200, 300);
+    light.castShadow = true;
+    scene.add(light);
+
+    var backlight = new THREE.PointLight(0x333366);
+    backlight.position.set(-150, -200, -300);
+    scene.add(backlight);
+
+    var ambient = new THREE.AmbientLight(0x808080);
+    scene.add(ambient);
 
 	//init renderer
-	renderer = new THREE.WebGLRenderer({
-		antialias: true,
-		clearAlpha: 1,
-		sortObjects: false,
-		sortElements: false
-	});
+    if(!renderer){
+
+        renderer = new THREE.WebGLRenderer({
+		    antialias: true,
+		    clearAlpha: 1,
+		    sortObjects: false,
+		    sortElements: false
+	    });
+    }
+
 
 	doLayout();
+    stage.appendChild(renderer.domElement);
 
+    doController();
+    controller.createNew();
 	animate();
+    camera.position.x = Math.cos(rotation)*50;
+    camera.position.z = Math.sin(rotation)*160;
 }
+
+function doController(){
+    controller = new THREE.Object3D();
+    controller.objects = [];
+    controller.scene   = scene;
+    controller.gui     = chassis;
+    controller.color   = 0xFFFFFF;
+    controller.createNew = function() {
+        // hide the overlay and then append the rendering of the chassis
+        $("#overlay").hide();
+        if(!renderer){
+	        renderer = new THREE.WebGLRenderer({
+		        antialias: true,
+		        clearAlpha: 1,
+		        sortObjects: false,
+		        sortElements: false
+	        });
+        }
+        
+        // default chassis is rectangular
+        var cube = new THREE.Mesh(
+          new THREE.CubeGeometry(20,20,20),
+          new THREE.MeshPhongMaterial({color: 0xFFFFFF})
+        );
+        cube.castShadow = cube.receiveShadow = true;
+        this.scene.add(cube);
+        this.objects.push(cube);
+        this.setCurrent(cube);
+    };    
+
+    controller.setCurrent = function(current) {
+        if (this.current)
+          //this.current.materials[0].ambient.setHex(0x000000);
+        this.current = current;
+        if (this.current) {
+          //this.current.materials[0].ambient.setHex(0x888800);
+          this.x.setValue(current.position.x);
+          this.y.setValue(current.position.y);
+          this.z.setValue(current.position.z);
+          this.sX.setValue(current.scale.x);
+          this.sY.setValue(current.scale.y);
+          this.sZ.setValue(current.scale.z);
+        }
+    };
+
+    // we could do a proxy to control only the currently selected object.
+    controller.proxy = function(propertyChain) {
+        var controller = this;
+        var tgt = controller;
+        for (var i=0; i<propertyChain.length-1; i++) {
+          tgt = tgt[propertyChain[i]];
+        }
+        var last = propertyChain[propertyChain.length-1];
+        return this.gui.add(tgt, last).onChange(function(v) {
+          var t = controller.current;
+          for (var i=0; i<propertyChain.length-1; i++) {
+            t = t[propertyChain[i]];
+          }
+          t[last] = v;
+        });
+    }
+
+
+    controller.x = controller.proxy(['position', 'x']).min(-50).max(50);
+    controller.y = controller.proxy(['position', 'y']).min(-50).max(50);
+    controller.z = controller.proxy(['position', 'z']).min(-50).max(50);
+
+    controller.sX = controller.proxy(['scale', 'x']).min(0.1).max(6).step(0.1).name('Width');
+    controller.sY = controller.proxy(['scale', 'y']).min(0.1).max(6).step(0.1).name('Height');
+    controller.sZ = controller.proxy(['scale', 'z']).min(0.1).max(6).step(0.1).name('Depth');
+
+    chassis.add(controller, 'createNew');
+    chassis.open();
+}
+
+function createChassis() {}
 
 function onImageLoaded() {
 
@@ -190,7 +306,6 @@ function animate() {
 }
 
 function render() {
-
 	renderer.render(scene, camera);
 }
 
@@ -245,4 +360,8 @@ function loadSample() {
 	inputImage.onload = function() {
 		onImageLoaded();
 	};
+}
+
+function v(x,y,z){ 
+    return new THREE.Vertex(new THREE.Vector3(x,y,z)); 
 }
