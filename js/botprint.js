@@ -111,15 +111,32 @@ $(document).ready( function() {
 	});
 	
     //init mouse listeners
+    window.onmousedown = function (ev){
+        if (ev.target == renderer.domElement) {
+          down = true;
+          sx = ev.clientX;
+          sy = ev.clientY;
+        }
+    };
+
+    window.onmouseup = function(){ down = false; };
+    
+    window.onmousemove = function(ev) {
+        if (down) {
+          var dx = ev.clientX - sx;
+          var dy = ev.clientY - sy;
+          rotation += dx/100;
+          camera.position.x = Math.cos(rotation)*150;
+          camera.position.z = Math.sin(rotation)*150;
+          camera.position.y += dy;
+          sx += dx;
+          sy += dy;
+        }
+    }
+
 	$("#stage").mousemove( onMouseMove);
-	$(window).mousewheel( onMouseWheel);
-	$(window).keydown(onKeyDown);
-	$(window).mousedown( function() {
-		enableMouseMove = true;
-	});
-	$(window).mouseup( function() {
-	    enableMouseMove = false;
-	});
+
+
 	
     //init stats
 	stats = new Stats();
@@ -179,9 +196,19 @@ function initWebGL() {
     cube.castShadow = cube.receiveShadow = true;
     scene.add(cube);
 
-    chassis.add(cube.scale, 'x').min(0.1).max(10).step(0.1);
-    chassis.add(cube.scale, 'y', 0.1, 10, 0.1);
-    chassis.add(cube.scale, 'z', 0.1, 10, 0.1);
+
+
+    chassis.add(cube.position, 'x').min(-50).max(50);
+    chassis.add(cube.position, 'y').min(-50).max(50);
+    chassis.add(cube.position, 'z').min(-50).max(50);
+
+
+    chassis.add(cube.scale, 'x').min(0.1).max(6).step(0.1).name('Width');
+    chassis.add(cube.scale, 'y').min(0.1).max(6).step(0.1).name('Height');
+    chassis.add(cube.scale, 'x').min(0.1).max(6).step(0.1).name('Depth');
+    chassis.add(this, 'createChassis').name('New Design');
+
+
     chassis.open();
     $("#overlay").hide();
 
@@ -296,25 +323,26 @@ function onImageLoaded() {
 }
 
 function onMouseMove(event) {
+    if (down) {
+        var dx = ev.clientX - sx;
+        var dy = ev.clientY - sy;
+        rotation += dx/100;
+        camera.position.x = Math.cos(rotation)*150;
+        camera.position.z = Math.sin(rotation)*150;
+        camera.position.y += dy;
+        sx += dx;
+        sy += dy;
+
+        stageCenterX = sx;
+        stageCenterY = sy;
+    }
+
 	if (enableMouseMove) {
 		mouseX = event.pageX - stageCenterX;
 		mouseY = event.pageY - stageCenterY;
 	}
 }
 
-function onMouseWheel(e,delta) {
-	//guiOptions.scale += delta * 0.1;
-	//limit
-	//guiOptions.scale = Math.max(guiOptions.scale, .1);
-	//guiOptions.scale = Math.min(guiOptions.scale, 10);
-}
-
-function onKeyDown(evt) {
-	//save on 'S' key
-	if (event.keyCode == '83') {
-		saveImage();
-	}
-}
 
 function animate() {
     if(!paused){
