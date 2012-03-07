@@ -30,7 +30,9 @@ var sx = 0, sy = 0;
 var rotation = 1;
 
 var controller;
-
+var debug = false;
+var width;
+var height;
 
 var cube;
 
@@ -73,8 +75,6 @@ document.getElementById('controls-container').appendChild(gui.domElement );
 var settings = gui.addFolder('General');
 settings.add(guiOptions, 'stageSize',0.6,1,.1).onChange(doLayout);
 settings.add(this, 'saveImage').name('Save Design');
-settings.add(this, 'debug').name('Debug Mode?');
-
 
 var chassis = gui.addFolder('Chassis');
 
@@ -119,8 +119,22 @@ $(document).ready( function() {
           down = true;
           sx = ev.clientX;
           sy = ev.clientY;
+          var v = new THREE.Vector3((sx/width) * 2 - 1, -(sy/height) * 2 + 1, 0.5);
+          projector.unprojectVector(v, camera);
+          var ray = new THREE.Ray(camera.position, v.subSelf(camera.position).normalize());
+          var intersects = ray.intersectObjects(controller.objects);
+          if (intersects.length > 0) {
+            controller.setCurrent(intersects[0].object);
+          }          
         }
     };
+
+    window.addEventListener('keyup', function(e) {
+      // Hide on 'H'
+      if (e.keyCode == 72) {
+        debug = !debug;
+      }
+    }, false);
 
     window.onmouseup = function(){ down = false; };
     
@@ -167,8 +181,8 @@ $(document).ready( function() {
 });
 
 function initWebGL() {
-    var width = renderer.domElement.width;
-    var height = renderer.domElement.height;
+    width = renderer.domElement.width;
+    height = renderer.domElement.height;
 
 	//init camera
     camera = new THREE.PerspectiveCamera( 45, width/height, 1, 10000 );
@@ -186,21 +200,20 @@ function initWebGL() {
         v(0, 0, -500), v(0, 0, 500), v(0,0,50), v(5,0,45), v(0,0,50), v(-5,0,45)
       );
 
-    var lineMat = new THREE.LineBasicMaterial({color: 0x888888, lineWidth: .1});
+    var lineMat = new THREE.LineBasicMaterial({color: 0x888888, lineWidth: .01});
     var line = new THREE.Line(lineGeo, lineMat);
     line.type = THREE.Lines;
     coordScene.add(line); 
 
     // bind dummy cube to dat.gui
-    cube = new THREE.Mesh(
-          new THREE.CubeGeometry(20,20,20),
-          new THREE.MeshPhongMaterial({color: 0xFFFFFF})
-    );
-    cube.castShadow = cube.receiveShadow = true;
-    scene.add(cube);
 
+//    cube = new THREE.Mesh(
+//          new THREE.CubeGeometry(20,20,20),
+//          new THREE.MeshPhongMaterial({color: 0xFFFFFF}));
+//   cube.castShadow = cube.receiveShadow = true;
+//    scene.add(cube);
 
-
+/*
     chassis.add(cube.position, 'x').min(-50).max(50);
     chassis.add(cube.position, 'y').min(-50).max(50);
     chassis.add(cube.position, 'z').min(-50).max(50);
@@ -215,7 +228,10 @@ function initWebGL() {
     chassis.open();
     $("#overlay").hide();
 
+*/
+    doController();
 
+    
     var light = new THREE.SpotLight(0xFFFFFF);
     light.position.set(150, 200, 300);
     light.castShadow = true;
@@ -252,14 +268,6 @@ function doController(){
     controller.createNew = function() {
         // hide the overlay and then append the rendering of the chassis
         $("#overlay").hide();
-        if(!renderer){
-	        renderer = new THREE.WebGLRenderer({
-		        antialias: true,
-		        clearAlpha: 1,
-		        sortObjects: false,
-		        sortElements: false
-	        });
-        }
         
         // default chassis is rectangular
         var cube = new THREE.Mesh(
@@ -274,10 +282,10 @@ function doController(){
 
     controller.setCurrent = function(current) {
         if (this.current)
-          //this.current.materials[0].ambient.setHex(0x000000);
+          this.current.material.ambient.setHex(0x000000);
         this.current = current;
         if (this.current) {
-          //this.current.materials[0].ambient.setHex(0x888800);
+          this.current.material.ambient.setHex(0x888800);
           this.x.setValue(current.position.x);
           this.y.setValue(current.position.y);
           this.z.setValue(current.position.z);
@@ -287,33 +295,60 @@ function doController(){
         }
     };
 
+    controller.x = chassis.add(controller.position, 'x').min(-50).max(50).onChange(function(v){
+        controller.current.position.x = v;
+    });
+
+    controller.y = chassis.add(controller.position, 'y').min(-50).max(50).onChange(function(v){
+        controller.current.position.y = v;
+    }); 
+
+    controller.z = chassis.add(controller.position, 'z').min(-50).max(50).onChange(function(v){
+        controller.current.position.z = v;
+    });    
+
+
+    controller.sX = chassis.add(controller.position, 'x').min(0.1).max(6).step(0.1).name('Width').onChange(function(v){
+        controller.current.scale.x = v;
+    });
+
+    controller.sY = chassis.add(controller.position, 'y').min(0.1).max(6).step(0.1).name('Height').onChange(function(v){
+        controller.current.scale.y = v;
+    }); 
+
+    controller.sZ = chassis.add(controller.position, 'z').min(0.1).max(6).step(0.1).name('Depth').onChange(function(v){
+        controller.current.scale.z = v;
+    });        
+
+
     // we could do a proxy to control only the currently selected object.
-    controller.proxy = function(propertyChain) {
-        var controller = this;
-        var tgt = controller;
-        for (var i=0; i<propertyChain.length-1; i++) {
-          tgt = tgt[propertyChain[i]];
-        }
-        var last = propertyChain[propertyChain.length-1];
-        return this.gui.add(tgt, last).onChange(function(v) {
-          var t = controller.current;
-          for (var i=0; i<propertyChain.length-1; i++) {
-            t = t[propertyChain[i]];
-          }
-          t[last] = v;
-        });
-    }
+//    controller.proxy = function(propertyChain) {
+//        var controller = this;
+//       var tgt = controller;
+//        for (var i=0; i<propertyChain.length-1; i++) {
+//          tgt = tgt[propertyChain[i]];
+//        }
+//        var last = propertyChain[propertyChain.length-1];
+//        return this.gui.add(tgt, last).onChange(function(v) {
+//          var t = controller.current;
+//          for (var i=0; i<propertyChain.length-1; i++) {
+//            t = t[propertyChain[i]];
+//          }
+//          t[last] = v;
+//        });
+//    }
 
 
-    controller.x = controller.proxy(['position', 'x']).min(-50).max(50);
-    controller.y = controller.proxy(['position', 'y']).min(-50).max(50);
-    controller.z = controller.proxy(['position', 'z']).min(-50).max(50);
+    //controller.x = controller.proxy(['position', 'x']).min(-50).max(50);
+    //controller.y = controller.proxy(['position', 'y']).min(-50).max(50);
+    //controller.z = controller.proxy(['position', 'z']).min(-50).max(50);
 
-    controller.sX = controller.proxy(['scale', 'x']).min(0.1).max(6).step(0.1).name('Width');
-    controller.sY = controller.proxy(['scale', 'y']).min(0.1).max(6).step(0.1).name('Height');
-    controller.sZ = controller.proxy(['scale', 'z']).min(0.1).max(6).step(0.1).name('Depth');
+    //controller.sX = controller.proxy(['scale', 'x']).min(0.1).max(6).step(0.1).name('Width');
+    //controller.sY = controller.proxy(['scale', 'y']).min(0.1).max(6).step(0.1).name('Height');
+    //controller.sZ = controller.proxy(['scale', 'z']).min(0.1).max(6).step(0.1).name('Depth');
 
     chassis.add(controller, 'createNew');
+    controller.createNew();
     chassis.open();
 }
 
@@ -325,7 +360,7 @@ function onImageLoaded() {
     // TODO implement me
 }
 
-function onMouseMove(event) {
+function onMouseMove(ev) {
     if (down) {
         var dx = ev.clientX - sx;
         var dy = ev.clientY - sy;
@@ -335,15 +370,7 @@ function onMouseMove(event) {
         camera.position.y += dy;
         sx += dx;
         sy += dy;
-
-        stageCenterX = sx;
-        stageCenterY = sy;
-    }
-
-	if (enableMouseMove) {
-		mouseX = event.pageX - stageCenterX;
-		mouseY = event.pageY - stageCenterY;
-	}
+    }    
 }
 
 
@@ -355,7 +382,7 @@ function animate() {
         camera.lookAt( scene.position );
         renderer.render(scene, camera);
         if(debug){
-	        renderer.render(coordScene, camera);
+            renderer.render(coordScene, camera);
         }
 
     }
