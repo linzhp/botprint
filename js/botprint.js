@@ -34,6 +34,8 @@ var controller;
 
 var cube;
 
+var debug = false;
+
 // vars accessible only by GUI
 var GUIOptions  = function() {
 	this.stageSize 	   = 0.8;
@@ -71,6 +73,7 @@ document.getElementById('controls-container').appendChild(gui.domElement );
 var settings = gui.addFolder('General');
 settings.add(guiOptions, 'stageSize',0.6,1,.1).onChange(doLayout);
 settings.add(this, 'saveImage').name('Save Design');
+settings.add(this, 'debug').name('Debug Mode?');
 
 
 var chassis = gui.addFolder('Chassis');
@@ -351,7 +354,9 @@ function animate() {
         renderer.clear();
         camera.lookAt( scene.position );
         renderer.render(scene, camera);
-        renderer.render(coordScene, camera);
+        if(debug){
+	        renderer.render(coordScene, camera);
+        }
 
     }
 	requestAnimationFrame(animate);
