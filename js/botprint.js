@@ -18,7 +18,9 @@ imageWidth,
 imageHeight,
 stageWidth,
 stageHeight,
-enableMouseMove = false;
+enableMouseMove = false,
+plane,
+curPoint;
 
 // tracked ones
 var coordScene = new THREE.Scene();
@@ -36,7 +38,7 @@ var height;
 
 var cube;
 
-var debug = false;
+var debug = true;
 
 // vars accessible only by GUI
 var GUIOptions  = function() {
@@ -113,46 +115,6 @@ $(document).ready( function() {
 		loadSample();
 	});
 	
-    //init mouse listeners
-    window.onmousedown = function (ev){
-        if (ev.target == renderer.domElement) {
-          down = true;
-          sx = ev.clientX;
-          sy = ev.clientY;
-          var v = new THREE.Vector3((sx/width) * 2 - 1, -(sy/height) * 2 + 1, 0.5);
-          projector.unprojectVector(v, camera);
-          var ray = new THREE.Ray(camera.position, v.subSelf(camera.position).normalize());
-          var intersects = ray.intersectObjects(controller.objects);
-          if (intersects.length > 0) {
-            controller.setCurrent(intersects[0].object);
-          }          
-        }
-    };
-
-    window.addEventListener('keyup', function(e) {
-      // Hide on 'H'
-      if (e.keyCode == 72) {
-        debug = !debug;
-      }
-    }, false);
-
-    window.onmouseup = function(){ down = false; };
-    
-    window.onmousemove = function(ev) {
-        if (down) {
-          var dx = ev.clientX - sx;
-          var dy = ev.clientY - sy;
-          rotation += dx/100;
-          camera.position.x = Math.cos(rotation)*150;
-          camera.position.z = Math.sin(rotation)*150;
-          camera.position.y += dy;
-          sx += dx;
-          sy += dy;
-        }
-    }
-
-	$("#stage").mousemove( onMouseMove);
-
 
 	
     //init stats
@@ -180,15 +142,44 @@ $(document).ready( function() {
 
 });
 
+function getRay(mouseEvent) {
+  var x, y;
+  if (mouseEvent.pageX || mouseEvent.pageY) {
+    x = mouseEvent.pageX;
+    y = mouseEvent.pageY;
+  }
+  else {
+    x = mouseEvent.clientX + document.body.scrollLeft +
+         document.documentElement.scrollLeft;
+    y = mouseEvent.clientY + document.body.scrollTop +
+         document.documentElement.scrollTop;
+  }
+  // Depending of the fact that stage.offsetParent == body
+  x -= stage.offsetLeft;
+  y -= stage.offsetTop;
+	var v = new THREE.Vector3(x/stageWidth*2-1, -y/stageHeight*2+1, 0.5);
+	projector.unprojectVector(v, camera);
+	var ray = new THREE.Ray(camera.position, v.subSelf(camera.position).normalize());
+	return ray;
+}
+
 function initWebGL() {
-    width = renderer.domElement.width;
-    height = renderer.domElement.height;
-
+    // init WebGL renderer
+		if (!renderer) {
+	        renderer = new THREE.WebGLRenderer({antialias: true});
+					renderer.setSize(stageWidth, stageHeight);
+			    renderer.autoClear = false;
+			    
+					renderer.domElement.addEventListener( 'mousemove', onMouseMove, false );
+					renderer.domElement.addEventListener( 'mousedown', onMouseDown, false );
+					renderer.domElement.addEventListener( 'mouseup', onMouseUp, false );
+	        stage.appendChild(renderer.domElement);
+		}
 	//init camera
-    camera = new THREE.PerspectiveCamera( 45, width/height, 1, 10000 );
+    camera = new THREE.PerspectiveCamera( 45, stageWidth/stageHeight, 1, 10000 );
     camera.position.y = 30;
-
-    //camera.position.z = -1000;
+		camera.position.x = 30;
+    camera.position.z = 100;
 	scene = new THREE.Scene();
     scene.add(camera);
     coordScene.fog = new THREE.FogExp2(0xEEEEEE, 0.0035);
@@ -207,11 +198,11 @@ function initWebGL() {
 
     // bind dummy cube to dat.gui
 
-//    cube = new THREE.Mesh(
-//          new THREE.CubeGeometry(20,20,20),
-//          new THREE.MeshPhongMaterial({color: 0xFFFFFF}));
-//   cube.castShadow = cube.receiveShadow = true;
-//    scene.add(cube);
+   // cube = new THREE.Mesh(
+         // new THREE.CubeGeometry(20,20,20),
+         // new THREE.MeshPhongMaterial({color: 0xFFFFFF}));
+  // cube.castShadow = cube.receiveShadow = true;
+   // scene.add(cube);
 
 /*
     chassis.add(cube.position, 'x').min(-50).max(50);
@@ -244,7 +235,15 @@ function initWebGL() {
     var ambient = new THREE.AmbientLight(0x808080);
     scene.add(ambient);
 
-	doLayout();
+		doLayout();
+		// Add invisible plane to detect mouse movement offset
+		plane = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000, 8, 8 ), 
+		new THREE.MeshBasicMaterial(
+			 { color: 0x000000, opacity: 0.25, transparent: true, wireframe: true } 
+		) );
+		plane.lookAt( camera.position );
+		plane.visible = false;
+		scene.add( plane );
 
     //doController();
     //controller.createNew();
@@ -252,10 +251,10 @@ function initWebGL() {
     // used for animating this stuff
     last = new Date().getTime();
 
-    camera.position.x = Math.cos(rotation)*50;
-    camera.position.z = Math.sin(rotation)*160;
+    // camera.position.x = Math.cos(rotation)*50;
+    // camera.position.z = Math.sin(rotation)*160;
 
-    renderer.autoClear = false;
+
     animate();
 }
 
@@ -281,8 +280,6 @@ function doController(){
     };    
 
     controller.setCurrent = function(current) {
-        if (this.current)
-          this.current.material.ambient.setHex(0x000000);
         this.current = current;
         if (this.current) {
           this.current.material.ambient.setHex(0x888800);
@@ -360,19 +357,35 @@ function onImageLoaded() {
     // TODO implement me
 }
 
-function onMouseMove(ev) {
-    if (down) {
-        var dx = ev.clientX - sx;
-        var dy = ev.clientY - sy;
-        rotation += dx/100;
-        camera.position.x = Math.cos(rotation)*150;
-        camera.position.z = Math.sin(rotation)*150;
-        camera.position.y += dy;
-        sx += dx;
-        sy += dy;
-    }    
+
+function onMouseDown(ev) {
+		ev.preventDefault();
+		down = true;
+		var ray = getRay(ev);
+	  var intersects;
+	  intersects = ray.intersectObjects(controller.objects);
+		if (intersects.length > 0) {
+		  controller.setCurrent(intersects[0].object);
+			var intersects = ray.intersectObject( plane );
+			curPoint = intersects[ 0 ].point;
+		}
+
 }
 
+function onMouseMove(ev) {
+    if (down && controller.current) {
+			var ray = getRay(ev)
+			var intersectPoint = ray.intersectObject( plane )[ 0 ].point;
+			
+			controller.current.position.addSelf( intersectPoint.clone().subSelf(curPoint) );
+			curPoint = intersectPoint;
+    }
+}
+
+function onMouseUp(ev) {
+		down = false;
+		controller.setCurrent(null); 
+}
 
 function animate() {
     if(!paused){
@@ -395,14 +408,6 @@ function render() {
 }
 
 function doLayout() {
-    // init WebGL renderer
-    if(!renderer){
-
-        renderer = new THREE.WebGLRenderer({antialias: true});
-        stage.appendChild(renderer.domElement);
-       // renderer.clear();  
-    }
-
 	var winHeight, winWidth, controlsWidth, containerWidth;
 
 	//get dims
@@ -432,15 +437,6 @@ function doLayout() {
 		top: (winHeight - stageHeight)/2,
 		visibility:"visible"
 	});
-
-	//set webgl size
-	if (renderer) {
-		renderer.setSize(stageWidth, stageHeight);
-        if(camera){
-		    camera.aspect = stageWidth / stageHeight;
-		    camera.updateProjectionMatrix();
-        }
-	}
 
 	stageCenterX = $('#stage').offset().left + stageWidth / 2;
 	stageCenterY = window.innerHeight / 2;
