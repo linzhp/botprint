@@ -16,7 +16,6 @@ var controller;
 var debug = false;
 var cube;
 
-var debug = true;
 
 // vars accessible only by GUI
 var GUIOptions = function() {
@@ -83,6 +82,15 @@ $(document).ready(function() {
 	$("#loadSample").click(function() {
 		loadSample();
 	});
+
+    window.addEventListener('keyup', function(e) {
+      // Hide on 'H'
+      if (e.keyCode == 72) {
+        debug = !debug;
+      }
+    }, false);
+
+
 	//init stats
 	stats = new Stats();
 	// Align bottom-left
@@ -102,6 +110,8 @@ $(document).ready(function() {
 		});
 
 	} else {
+        // hide the overlay and then append the rendering of the chassis
+		$("#overlay").hide();
 		initWebGL();
 	}
 
@@ -158,29 +168,7 @@ function initWebGL() {
 	line.type = THREE.Lines;
 	coordScene.add(line);
 
-	// bind dummy cube to dat.gui
-
-	// cube = new THREE.Mesh(
-	// new THREE.CubeGeometry(20,20,20),
-	// new THREE.MeshPhongMaterial({color: 0xFFFFFF}));
-	// cube.castShadow = cube.receiveShadow = true;
-	// scene.add(cube);
-
-	/*
-	 chassis.add(cube.position, 'x').min(-50).max(50);
-	 chassis.add(cube.position, 'y').min(-50).max(50);
-	 chassis.add(cube.position, 'z').min(-50).max(50);
-
-	 chassis.add(cube.scale, 'x').min(0.1).max(6).step(0.1).name('Width');
-	 chassis.add(cube.scale, 'y').min(0.1).max(6).step(0.1).name('Height');
-	 chassis.add(cube.scale, 'x').min(0.1).max(6).step(0.1).name('Depth');
-	 chassis.add(this, 'createChassis').name('New Design');
-
-	 chassis.open();
-	 $("#overlay").hide();
-
-	 */
-	doController();
+    doController();
 
 	var light = new THREE.SpotLight(0xFFFFFF);
 	light.position.set(150, 200, 300);
@@ -206,14 +194,9 @@ function initWebGL() {
 	plane.visible = false;
 	scene.add(plane);
 
-	//doController();
-	//controller.createNew();
-
 	// used for animating this stuff
 	last = new Date().getTime();
 
-	// camera.position.x = Math.cos(rotation)*50;
-	// camera.position.z = Math.sin(rotation)*160;
 
 	animate();
 }
@@ -225,12 +208,9 @@ function doController() {
 	controller.gui = chassis;
 	controller.color = 0xFFFFFF;
 	controller.createNew = function() {
-		// hide the overlay and then append the rendering of the chassis
-		$("#overlay").hide();
-
 		// default chassis is rectangular
 		var cube = new THREE.Mesh(new THREE.CubeGeometry(20, 20, 20), new THREE.MeshPhongMaterial({
-			color : 0xFFFFFF
+			color : Math.random() * 0xFFFFFF
 		}));
 		cube.castShadow = cube.receiveShadow = true;
 		this.scene.add(cube);
@@ -275,30 +255,6 @@ function doController() {
 		controller.current.scale.z = v;
 	});
 	// we could do a proxy to control only the currently selected object.
-	//    controller.proxy = function(propertyChain) {
-	//        var controller = this;
-	//       var tgt = controller;
-	//        for (var i=0; i<propertyChain.length-1; i++) {
-	//          tgt = tgt[propertyChain[i]];
-	//        }
-	//        var last = propertyChain[propertyChain.length-1];
-	//        return this.gui.add(tgt, last).onChange(function(v) {
-	//          var t = controller.current;
-	//          for (var i=0; i<propertyChain.length-1; i++) {
-	//            t = t[propertyChain[i]];
-	//          }
-	//          t[last] = v;
-	//        });
-	//    }
-
-	//controller.x = controller.proxy(['position', 'x']).min(-50).max(50);
-	//controller.y = controller.proxy(['position', 'y']).min(-50).max(50);
-	//controller.z = controller.proxy(['position', 'z']).min(-50).max(50);
-
-	//controller.sX = controller.proxy(['scale', 'x']).min(0.1).max(6).step(0.1).name('Width');
-	//controller.sY = controller.proxy(['scale', 'y']).min(0.1).max(6).step(0.1).name('Height');
-	//controller.sZ = controller.proxy(['scale', 'z']).min(0.1).max(6).step(0.1).name('Depth');
-
 	chassis.add(controller, 'createNew');
 	controller.createNew();
 	chassis.open();
@@ -333,7 +289,7 @@ function onMouseMove(ev) {
 	  rotation += dx/100;
 	  camera.position.x = Math.cos(rotation)*150;
 	  camera.position.z = Math.sin(rotation)*150;
-	  // camera.position.y += dy;
+	  camera.position.y += dy;
 	  sx += dx;
 	  sy += dy;
 	}
