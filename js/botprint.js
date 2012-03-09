@@ -316,24 +316,20 @@ function onImageLoaded() {
 function onMouseDown(ev) {
 	ev.preventDefault();
 	down = true;
-	var ray = getRay(ev);
-	var intersects;
-	intersects = ray.intersectObjects(controller.objects);
-	if(intersects.length > 0) {
-		controller.setCurrent(intersects[0].object);
-		var intersects = ray.intersectObject(plane);
-		curPoint = intersects[0].point;
-	}
-
+    sx = ev.clientX;
+    sy = ev.clientY;
 }
 
 function onMouseMove(ev) {
-	if(enableMouseMove && down && controller.current) {
-		var ray = getRay(ev)
-		var intersectPoint = ray.intersectObject( plane )[0].point;
-
-		controller.current.position.addSelf(intersectPoint.clone().subSelf(curPoint));
-		curPoint = intersectPoint;
+	if (down) {
+	  var dx = ev.clientX - sx;
+	  var dy = ev.clientY - sy;
+	  rotation += dx/100;
+	  camera.position.x = Math.cos(rotation)*150;
+	  camera.position.z = Math.sin(rotation)*150;
+	  // camera.position.y += dy;
+	  sx += dx;
+	  sy += dy;
 	}
 }
 
