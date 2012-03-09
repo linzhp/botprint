@@ -318,6 +318,12 @@ function onMouseDown(ev) {
 	down = true;
     sx = ev.clientX;
     sy = ev.clientY;
+	var ray = getRay(ev);
+	var intersects;
+	intersects = ray.intersectObjects(controller.objects);
+	if(intersects.length > 0) {
+		controller.setCurrent(intersects[0].object);
+	}
 }
 
 function onMouseMove(ev) {
