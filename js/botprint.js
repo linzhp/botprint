@@ -49,8 +49,8 @@ settings.add(this, 'saveImage').name('Save Design');
 var chassis = gui.addFolder('Chassis');
 
 var wheels = gui.addFolder('Wheels');
-wheels.add(whe, 'message');
 
+var editor = gui.addFolder('Editor');
 /**
  * Init page
  */
@@ -192,9 +192,6 @@ function doController() {
 	controller.gui = chassis;
 	controller.color = 0xFFFFFF;
 	controller.createNew = function() {
-		// hide the overlay and then append the rendering of the chassis
-		
-
 		// default chassis is rectangular
 		var cube = new THREE.Mesh(new THREE.CubeGeometry(20, 20, 20), new THREE.MeshPhongMaterial({
 			color : 0xFFFFFF, opacity: 0.8
@@ -215,30 +212,33 @@ function doController() {
 			this.sX.setValue(current.scale.x);
 			this.sY.setValue(current.scale.y);
 			this.sZ.setValue(current.scale.z);
+			editor.open();
+		}else{
+			editor.close();
 		}
 	};
 
-	controller.x = chassis.add(controller.position, 'x').min(-50).max(50).onChange(function(v) {
+	controller.x = editor.add(controller.position, 'x').min(-50).max(50).onChange(function(v) {
 		controller.current.position.x = v;
 	});
 
-	controller.y = chassis.add(controller.position, 'y').min(-50).max(50).onChange(function(v) {
+	controller.y = editor.add(controller.position, 'y').min(-50).max(50).onChange(function(v) {
 		controller.current.position.y = v;
 	});
 
-	controller.z = chassis.add(controller.position, 'z').min(-50).max(50).onChange(function(v) {
+	controller.z = editor.add(controller.position, 'z').min(-50).max(50).onChange(function(v) {
 		controller.current.position.z = v;
 	});
 
-	controller.sX = chassis.add(controller.position, 'x').min(0.1).max(6).step(0.1).name('Width').onChange(function(v) {
+	controller.sX = editor.add(controller.scale, 'x').min(0.1).max(6).step(0.1).name('Width').onChange(function(v) {
 		controller.current.scale.x = v;
 	});
 
-	controller.sY = chassis.add(controller.position, 'y').min(0.1).max(6).step(0.1).name('Height').onChange(function(v) {
+	controller.sY = editor.add(controller.scale, 'y').min(0.1).max(6).step(0.1).name('Height').onChange(function(v) {
 		controller.current.scale.y = v;
 	});
 
-	controller.sZ = chassis.add(controller.position, 'z').min(0.1).max(6).step(0.1).name('Depth').onChange(function(v) {
+	controller.sZ = editor.add(controller.scale, 'z').min(0.1).max(6).step(0.1).name('Depth').onChange(function(v) {
 		controller.current.scale.z = v;
 	});
 	// we could do a proxy to control only the currently selected object.

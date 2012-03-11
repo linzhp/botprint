@@ -5,7 +5,7 @@
 Wheel.prototype = new THREE.Mesh();
 Wheel.prototype.constructor = Wheel;
 function Wheel(geometry) {
-	THREE.Mesh.call( this,  geometry, new THREE.MeshLambertMaterial({color:0x333333}));
+	THREE.Mesh.call( this,  geometry, new THREE.MeshLambertMaterial());
 	
 	this.setScale(0.3);
 }
