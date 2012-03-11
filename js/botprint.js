@@ -1,7 +1,7 @@
 /* Author: AugmentedDesignLab */
 
 // sort of like global variables
-var stage, stats, camera, scene, renderer, mouseX = 0, mouseY = 0, material, inputImage, stageCenterX, stageCenterY, canvas, context, imageWidth, imageHeight, stageWidth, stageHeight, enableMouseMove = false, plane, curPoint;
+var stage, stats, camera, scene, renderer, mouseX = 0, mouseY = 0, material, inputImage, stageCenterX, stageCenterY, canvas, context, imageWidth, imageHeight, stageWidth, stageHeight, enableMouseMove = false;
 
 // tracked ones
 var coordScene = new THREE.Scene();
@@ -26,11 +26,6 @@ var GUIOptions = function() {
 };
 var ChassisSelection = function() {
 	this.styles = [];
-	//this.explode = function() { ... }
-	// this function will have images....
-}
-var WheelsSelection = function() {
-	this.message = 'wheels.selection';
 	//this.explode = function() { ... }
 	// this function will have images....
 }
@@ -140,9 +135,9 @@ function initWebGL() {
 	}
 	//init camera
 	camera = new THREE.PerspectiveCamera(45, stageWidth / stageHeight, 1, 10000);
-	camera.position.y = 30;
-	camera.position.x = 30;
-	camera.position.z = 100;
+	camera.position.x = Math.cos(rotation)*150;
+	camera.position.z = Math.sin(rotation)*150;
+	camera.position.y = 50;
 	scene = new THREE.Scene();
 	scene.add(camera);
 	coordScene.fog = new THREE.FogExp2(0xEEEEEE, 0.0035);
@@ -158,28 +153,6 @@ function initWebGL() {
 	line.type = THREE.Lines;
 	coordScene.add(line);
 
-	// bind dummy cube to dat.gui
-
-	// cube = new THREE.Mesh(
-	// new THREE.CubeGeometry(20,20,20),
-	// new THREE.MeshPhongMaterial({color: 0xFFFFFF}));
-	// cube.castShadow = cube.receiveShadow = true;
-	// scene.add(cube);
-
-	/*
-	 chassis.add(cube.position, 'x').min(-50).max(50);
-	 chassis.add(cube.position, 'y').min(-50).max(50);
-	 chassis.add(cube.position, 'z').min(-50).max(50);
-
-	 chassis.add(cube.scale, 'x').min(0.1).max(6).step(0.1).name('Width');
-	 chassis.add(cube.scale, 'y').min(0.1).max(6).step(0.1).name('Height');
-	 chassis.add(cube.scale, 'x').min(0.1).max(6).step(0.1).name('Depth');
-	 chassis.add(this, 'createChassis').name('New Design');
-
-	 chassis.open();
-	 $("#overlay").hide();
-
-	 */
 	doController();
 
 	var light = new THREE.SpotLight(0xFFFFFF);
@@ -206,14 +179,8 @@ function initWebGL() {
 	plane.visible = false;
 	scene.add(plane);
 
-	//doController();
-	//controller.createNew();
-
 	// used for animating this stuff
 	last = new Date().getTime();
-
-	// camera.position.x = Math.cos(rotation)*50;
-	// camera.position.z = Math.sin(rotation)*160;
 
 	animate();
 }
@@ -226,11 +193,11 @@ function doController() {
 	controller.color = 0xFFFFFF;
 	controller.createNew = function() {
 		// hide the overlay and then append the rendering of the chassis
-		$("#overlay").hide();
+		
 
 		// default chassis is rectangular
 		var cube = new THREE.Mesh(new THREE.CubeGeometry(20, 20, 20), new THREE.MeshPhongMaterial({
-			color : 0xFFFFFF
+			color : 0xFFFFFF, opacity: 0.8
 		}));
 		cube.castShadow = cube.receiveShadow = true;
 		this.scene.add(cube);
@@ -300,7 +267,8 @@ function doController() {
 	//controller.sZ = controller.proxy(['scale', 'z']).min(0.1).max(6).step(0.1).name('Depth');
 
 	chassis.add(controller, 'createNew');
-	controller.createNew();
+	wheels.add(whe, 'addWheel');
+	// controller.createNew();
 	chassis.open();
 }
 
@@ -312,6 +280,7 @@ function onImageLoaded() {
 	// load image into canvas pixels
 	// TODO implement me
 }
+
 
 function onMouseDown(ev) {
 	ev.preventDefault();
@@ -333,7 +302,7 @@ function onMouseMove(ev) {
 	  rotation += dx/100;
 	  camera.position.x = Math.cos(rotation)*150;
 	  camera.position.z = Math.sin(rotation)*150;
-	  // camera.position.y += dy;
+	  camera.position.y += dy;
 	  sx += dx;
 	  sy += dy;
 	}
@@ -354,6 +323,12 @@ function animate() {
 			renderer.render(coordScene, camera);
 		}
 
+	}
+	if(controller.objects.length > 0){
+		$("#overlay").hide();		
+	}
+	else{
+		$("#overlay").show();
 	}
 	requestAnimationFrame(animate);
 	stats.update();
