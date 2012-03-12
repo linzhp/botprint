@@ -31,14 +31,9 @@ var ChassisSelection = function () {
 	//this.explode = function() { ... }
 	// this function will have images....
 }
-var WheelsSelection = function () {
-	this.message = 'wheels.selection';
-	//this.explode = function() { ... }
-	// this function will have images....
-}
-function saveImage () {
-	render ();
-	window.open (renderer.domElement.toDataURL ("image/png"));
+function saveImage() {
+	render();
+	window.open(renderer.domElement.toDataURL("image/png"));
 }
 
 var guiOptions = new GUIOptions ();
@@ -55,9 +50,9 @@ settings.add (this, 'saveImage').name ('Save Design');
 
 var chassis = gui.addFolder ('Chassis');
 
-var wheels = gui.addFolder ('Wheels');
-wheels.add (whe, 'message');
+var wheels = gui.addFolder('Wheels');
 
+var editor = gui.addFolder('Editor');
 /**
  * Init page
  */
@@ -152,32 +147,29 @@ function initWebGL () {
 		stage.appendChild (renderer.domElement);
 	}
 	//init camera
-	camera = new THREE.PerspectiveCamera (45, stageWidth / stageHeight, 1, 10000);
-	camera.position.y = 30;
-	camera.position.x = 30;
-	camera.position.z = 100;
-	scene = new THREE.Scene ();
-	scene.add (camera);
-	coordScene.fog = new THREE.FogExp2 (0xEEEEEE, 0.0035);
+	camera = new THREE.PerspectiveCamera(45, stageWidth / stageHeight, 1, 10000);
+	camera.position.x = Math.cos(rotation)*150;
+	camera.position.z = Math.sin(rotation)*150;
+	camera.position.y = 50;
+	scene = new THREE.Scene();
+	scene.add(camera);
+	coordScene.fog = new THREE.FogExp2(0xEEEEEE, 0.0035);
 
-	var lineGeo = new THREE.Geometry ();
-	lineGeo.vertices.push (v (-500, 0, 0), v (500, 0, 0), v (50, 0, 0), v (45, 5, 0),
-		v (50, 0, 0), v (45, -5, 0), v (0, -500, 0), v (0, 500, 0), v (0, 50, 0), v (5, 45, 0),
-		v (0, 50, 0), v (-5, 45, 0), v (0, 0, -500), v (0, 0, 500), v (0, 0, 50), v (5, 0, 45),
-		v (0, 0, 50), v (-5, 0, 45));
+	var lineGeo = new THREE.Geometry();
+	lineGeo.vertices.push(v(-500, 0, 0), v(500, 0, 0), v(50, 0, 0), v(45, 5, 0), v(50, 0, 0), v(45, -5, 0), v(0, -500, 0), v(0, 500, 0), v(0, 50, 0), v(5, 45, 0), v(0, 50, 0), v(-5, 45, 0), v(0, 0, -500), v(0, 0, 500), v(0, 0, 50), v(5, 0, 45), v(0, 0, 50), v(-5, 0, 45));
 
-	var lineMat = new THREE.LineBasicMaterial ({
-		color:0x888888,
-		lineWidth:.01
+	var lineMat = new THREE.LineBasicMaterial({
+		color : 0x888888,
+		lineWidth : .01
 	});
 	var line = new THREE.Line (lineGeo, lineMat);
 	line.type = THREE.Lines;
-	coordScene.add (line);
+	coordScene.add(line);
 
-	doController ();
+	doController();
 
-	var light = new THREE.SpotLight (0xFFFFFF);
-	light.position.set (150, 200, 300);
+	var light = new THREE.SpotLight(0xFFFFFF);
+	light.position.set(150, 200, 300);
 	light.castShadow = true;
 	scene.add (light);
 
@@ -199,13 +191,12 @@ function initWebGL () {
 		}));
 	plane.lookAt (camera.position);
 	plane.visible = false;
-	scene.add (plane);
+	scene.add(plane);
 
 	// used for animating this stuff
 	last = new Date ().getTime ();
 
-
-	animate ();
+	animate();
 }
 
 function doController () {
@@ -277,56 +268,74 @@ function doController () {
 			this.current.material.ambient.setHex (0x000000);
 		}
 		this.current = current;
-		if (this.current) {
-			this.current.material.ambient.setHex (0x888800);
-			this.x.setValue (current.position.x);
-			this.y.setValue (current.position.y);
-			this.z.setValue (current.position.z);
-			this.sX.setValue (current.scale.x);
-			this.sY.setValue (current.scale.y);
-			this.sZ.setValue (current.scale.z);
+		if(this.current) {
+			this.current.material.ambient.setHex(0x888800);
+			this.x.setValue(current.position.x);
+			this.y.setValue(current.position.y);
+			this.z.setValue(current.position.z);
+			this.sX.setValue(current.scale.x);
+			this.sY.setValue(current.scale.y);
+			this.sZ.setValue(current.scale.z);
+			editor.open();
+		}else{
+			editor.close();
 		}
 	};
 
-	controller.x =
-		chassis.add (controller.position, 'x').min (-50).max (50).onChange (function (v) {
-			controller.current.position.x = v;
-		});
+	controller.x = editor.add(controller.position, 'x').min(-50).max(50).onChange(function(v) {
+		controller.current.position.x = v;
+	});
 
-	controller.y =
-		chassis.add (controller.position, 'y').min (-50).max (50).onChange (function (v) {
-			controller.current.position.y = v;
-		});
+	controller.y = editor.add(controller.position, 'y').min(-50).max(50).onChange(function(v) {
+		controller.current.position.y = v;
+	});
 
-	controller.z =
-		chassis.add (controller.position, 'z')
-			.min (-50).max (50).onChange (function (v) {
-			controller.current.position.z = v;
-		});
+	controller.z = editor.add(controller.position, 'z').min(-50).max(50).onChange(function(v) {
+		controller.current.position.z = v;
+	});
 
-	controller.sX =
-		chassis.add (controller.position, 'x')
-			.min (0.1).max (6).step (0.1).name ('Width').onChange (function (v) {
-			controller.current.scale.x = v;
-		});
+	controller.sX = editor.add(controller.scale, 'x').min(0.1).max(6).step(0.1).name('Width').onChange(function(v) {
+		controller.current.scale.x = v;
+	});
 
-	controller.sY =
-		chassis.add (controller.position, 'y')
-			.min (0.1).max (6).step (0.1).name ('Height').onChange (function (v) {
-			controller.current.scale.y = v;
-		});
+	controller.sY = editor.add(controller.scale, 'y').min(0.1).max(6).step(0.1).name('Height').onChange(function(v) {
+		controller.current.scale.y = v;
+	});
 
-	controller.sZ =
-		chassis.add (controller.position, 'z')
-			.min (0.1).max (6).step (0.1).name ('Depth').onChange (function (v) {
-			controller.current.scale.z = v;
-		});
+	controller.sZ = editor.add(controller.scale, 'z').min(0.1).max(6).step(0.1).name('Depth').onChange(function(v) {
+		controller.current.scale.z = v;
+	});
 	// we could do a proxy to control only the currently selected object.
-	chassis.add (controller, 'createNew');
+	//    controller.proxy = function(propertyChain) {
+	//        var controller = this;
+	//       var tgt = controller;
+	//        for (var i=0; i<propertyChain.length-1; i++) {
+	//          tgt = tgt[propertyChain[i]];
+	//        }
+	//        var last = propertyChain[propertyChain.length-1];
+	//        return this.gui.add(tgt, last).onChange(function(v) {
+	//          var t = controller.current;
+	//          for (var i=0; i<propertyChain.length-1; i++) {
+	//            t = t[propertyChain[i]];
+	//          }
+	//          t[last] = v;
+	//        });
+	//    }
+
+	//controller.x = controller.proxy(['position', 'x']).min(-50).max(50);
+	//controller.y = controller.proxy(['position', 'y']).min(-50).max(50);
+	//controller.z = controller.proxy(['position', 'z']).min(-50).max(50);
+
+	//controller.sX = controller.proxy(['scale', 'x']).min(0.1).max(6).step(0.1).name('Width');
+	//controller.sY = controller.proxy(['scale', 'y']).min(0.1).max(6).step(0.1).name('Height');
+	//controller.sZ = controller.proxy(['scale', 'z']).min(0.1).max(6).step(0.1).name('Depth');
+
+	chassis.add(controller, 'createNew');
 	chassis.add(controller, 'randomChassis');
 	chassis.add(controller, 'binpacking');
-	controller.createNew ();
-	chassis.open ();
+	wheels.add(whe, 'addWheel');
+	// controller.createNew();
+	chassis.open();
 }
 
 function createChassis () {
@@ -338,8 +347,8 @@ function onImageLoaded () {
 	// TODO implement me
 }
 
-function onMouseDown (ev) {
-	ev.preventDefault ();
+function onMouseDown(ev) {
+	ev.preventDefault();
 	down = true;
 	sx = ev.clientX;
 	sy = ev.clientY;
@@ -356,8 +365,8 @@ function onMouseMove (ev) {
 		var dx = ev.clientX - sx;
 		var dy = ev.clientY - sy;
 		rotation += dx / 100;
-		camera.position.x = Math.cos (rotation) * 150;
-		camera.position.z = Math.sin (rotation) * 150;
+		camera.position.x = Math.cos(rotation) * 150;
+		camera.position.z = Math.sin(rotation) * 150;
 		camera.position.y += dy;
 		sx += dx;
 		sy += dy;
@@ -380,8 +389,14 @@ function animate () {
 		}
 
 	}
-	requestAnimationFrame (animate);
-	stats.update ();
+	if(controller.objects.length > 0){
+		$("#overlay").hide();		
+	}
+	else{
+		$("#overlay").show();
+	}
+	requestAnimationFrame(animate);
+	stats.update();
 }
 
 function render () {
