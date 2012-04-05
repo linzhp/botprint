@@ -193,6 +193,7 @@ function initWebGL () {
 	plane.visible = false;
 	scene.add(plane);
 
+
 	// used for animating this stuff
 	last = new Date ().getTime ();
 
