@@ -3,7 +3,7 @@
 // sort of like global variables
 var stage, stats, camera, scene, renderer, material, inputImage,
 	stageCenterX, stageCenterY, canvas, context,
-	stageWidth, stageHeight, plane;
+	stageWidth, stageHeight, plane, selectedObject, curPoint;
 // tracked ones
 var coordScene = new THREE.Scene ();
 var projector = new THREE.Projector ();
@@ -357,25 +357,37 @@ function onMouseDown(ev) {
 	var intersects;
 	intersects = ray.intersectObjects (controller.objects);
 	if (intersects.length > 0) {
-		controller.setCurrent (intersects[0].object);
+		selectedObject = intersects[0].object;
+		controller.setCurrent(selectedObject);
+		intersects = ray.intersectObject(plane);
+		curPoint = intersects[0].point;
 	}
 }
 
 function onMouseMove (ev) {
 	if (down) {
-		var dx = ev.clientX - sx;
-		var dy = ev.clientY - sy;
-		rotation += dx / 100;
-		camera.position.x = Math.cos(rotation) * 150;
-		camera.position.z = Math.sin(rotation) * 150;
-		camera.position.y += dy;
-		sx += dx;
-		sy += dy;
+		if(selectedObject) { // Drag selected objerct
+			var ray = getRay(ev)
+			var intersectPoint = ray.intersectObject(plane)[ 0 ].point;
+			selectedObject.position.addSelf( intersectPoint.clone().subSelf(curPoint) );
+			curPoint = intersectPoint;
+		} else{ // Rotate the scene
+			var dx = ev.clientX - sx;
+			var dy = ev.clientY - sy;
+			rotation += dx / 100;
+			camera.position.x = Math.cos(rotation) * 150;
+			camera.position.z = Math.sin(rotation) * 150;
+			camera.position.y += dy;
+			plane.lookAt(camera.position);
+			sx += dx;
+			sy += dy;			
+		}
 	}
 }
 
 function onMouseUp (ev) {
 	down = false;
+	selectedObject = null;
 }
 
 function animate () {

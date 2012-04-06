@@ -1,3 +1,8 @@
+/**
+ * Define the arrow shape used to adjust other objects
+ * @author Zhongpeng Lin 
+ */
+
 Arrow.prototype = new THREE.Mesh();
 Arrow.prototype.constructor = Arrow;
 
