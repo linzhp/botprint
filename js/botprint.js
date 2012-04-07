@@ -14,7 +14,7 @@ var sx = 0, sy = 0;
 var rotation = 1;
 
 var controller;
-var debug = false;
+var debug = true;
 
 var packer = new Packer(500, 500, 500);
 var blocks = [];
@@ -217,6 +217,8 @@ function doController () {
 //		cube.castShadow = cube.receiveShadow = true;
 
 		var spawned = chassis.spawn(new THREE.CubeGeometry( 20, 20, 20 ));
+		
+		
 		this.scene.add (spawned);
 		this.objects.push (spawned);
 		this.setCurrent (spawned);
@@ -259,7 +261,7 @@ function doController () {
 		var geometry = THREE.CSG.fromCSG( sphere.union(cube) );
 		var mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial());
 		mesh.castShadow = mesh.receiveShadow = true;
-
+		
 		this.scene.add(mesh);
 		this.objects.push(mesh);
 	};
@@ -367,8 +369,11 @@ function onMouseDown(ev) {
 function onMouseMove (ev) {
 	if (down) {
 		if(selectedObject) { // Drag selected objerct
-			var ray = getRay(ev)
-			var intersectPoint = ray.intersectObject(plane)[ 0 ].point;
+			var ray = getRay(ev);
+			var intersects = ray.intersectObject(plane);
+			var intersectPoint = intersects[ 0 ].point;
+			if(intersects.length == 0)
+				debugger;
 			selectedObject.position.addSelf( intersectPoint.clone().subSelf(curPoint) );
 			curPoint = intersectPoint;
 		} else{ // Rotate the scene
@@ -386,6 +391,7 @@ function onMouseMove (ev) {
 }
 
 function onMouseUp (ev) {
+	debugger;
 	down = false;
 	selectedObject = null;
 }
