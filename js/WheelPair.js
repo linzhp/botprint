@@ -7,12 +7,8 @@ function WheelPair(wheelGeometry) {
 	this.wheelGeometry = wheelGeometry;
 	this.buildGeometry();
 	THREE.Mesh.call( this, this.geometry, new THREE.MeshLambertMaterial());
-	
-	var arrow = new Arrow();
-	arrow.position.set(20,0,0);
-	this.add(arrow);
-	
-	this.position.set(10, 10, 10);
+	new ScaleXController(this);
+	this.position.set(10, 10, 10);	
 }
 
 WheelPair.prototype.buildGeometry = function() {

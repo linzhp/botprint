@@ -371,10 +371,15 @@ function onMouseMove (ev) {
 		if(selectedObject) { // Drag selected objerct
 			var ray = getRay(ev);
 			var intersects = ray.intersectObject(plane);
-			var intersectPoint = intersects[ 0 ].point;
 			if(intersects.length == 0)
 				debugger;
-			selectedObject.position.addSelf( intersectPoint.clone().subSelf(curPoint) );
+			var intersectPoint = intersects[ 0 ].point;
+			var offset = new THREE.Vector3().sub(intersectPoint, curPoint);
+			var cameraPosition = camera.position;
+			selectedObject.updateMatrixWorld();
+			var distRatio = cameraPosition.distanceTo(selectedObject.matrixWorld.getPosition()) /
+				 cameraPosition.distanceTo(intersectPoint);
+			selectedObject.onDrag( offset.multiplyScalar(distRatio));
 			curPoint = intersectPoint;
 		} else{ // Rotate the scene
 			var dx = ev.clientX - sx;
@@ -391,7 +396,6 @@ function onMouseMove (ev) {
 }
 
 function onMouseUp (ev) {
-	debugger;
 	down = false;
 	selectedObject = null;
 }
