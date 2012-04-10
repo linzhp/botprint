@@ -1,37 +1,42 @@
 /**
  * @author Zhongpeng Lin
  */
-WheelPair.prototype = new THREE.Mesh();
+WheelPair.prototype = new THREE.Object3D();
 WheelPair.prototype.constructor = WheelPair;
 function WheelPair(wheelGeometry) {
-	this.wheelGeometry = wheelGeometry;
-	this.buildGeometry();
-	THREE.Mesh.call( this, this.geometry, new THREE.MeshLambertMaterial());
-	new ScaleXController(this);
+	this.wheel1 = new Wheel(wheelGeometry);
+	this.wheel2 = new Wheel(wheelGeometry);
+	this.wheel2.setRotation(0, Math.PI, 0);
+
+	this.width = 50;
+	this.build();
+
+	this.add(this.wheel1);
+	this.add(this.wheel2);
+	new WidthController(this);
 	this.position.set(10, 10, 10);	
 }
 
-WheelPair.prototype.buildGeometry = function() {
-	var width = 50;
-	var axle = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, width, 50, 50, false),
+WheelPair.prototype.build = function() {
+	if(this.axle){
+		this.remove(this.axle);		
+	}
+	this.axle = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, this.width, 50, 50, false),
 		new THREE.MeshBasicMaterial());
-	axle.rotation.z = Math.PI/2;
-	var wheel1 = new Wheel(this.wheelGeometry);
-	wheel1.setPosition(width*0.5, 0, 0);
-	var wheel2 = new Wheel(this.wheelGeometry);
-	wheel2.setRotation(0, Math.PI, 0);
-	wheel2.setPosition(-width*0.5, 0, 0);
-	
-	var combined = new THREE.Geometry();
-	THREE.GeometryUtils.merge(combined, wheel1);
-	THREE.GeometryUtils.merge(combined, wheel2);
-	THREE.GeometryUtils.merge(combined, axle);
-	this.geometry = combined;
-}
+	this.axle.rotation.z = Math.PI/2;
+	this.add(this.axle);
+
+	this.wheel1.setPosition(this.width*0.5, 0, 0);
+	this.wheel2.setPosition(-this.width*0.5, 0, 0);
+};
 
 WheelPair.prototype.setWidth = function(width) {
 	this.width = width;
-}
+	this.build();
+};
 
+WheelPair.prototype.getWidth = function() {
+	return this.width;
+};
 
 
