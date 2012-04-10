@@ -11,7 +11,7 @@ function Arrow() {
 		new THREE.MeshBasicMaterial());
 	shaft.position.y = -1.5;
 		
-	var head = new THREE.Mesh(new THREE.CylinderGeometry(0, 3, 6, 50, 50, false),
+	var head = new THREE.Mesh(new THREE.CylinderGeometry(0, 2, 6, 50, 50, false),
 		new THREE.MeshBasicMaterial());
 	head.position.y = 3;
 		
