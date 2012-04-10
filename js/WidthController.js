@@ -6,7 +6,6 @@
  */
 
 function WidthController(object) {
-	this.object = object;
 	arrow = new Arrow();
 	
 	arrow.onDrag = function(offset) {
