@@ -19,6 +19,5 @@ function WidthController(object) {
 	arrow.rotation.z = Math.PI * 3 / 2;
 	
 	object.add(arrow);
-	controller.objects.push(arrow);
 }
 

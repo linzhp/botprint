@@ -360,6 +360,7 @@ function onMouseDown(ev) {
 	intersects = ray.intersectObjects (controller.objects);
 	if (intersects.length > 0) {
 		selectedObject = intersects[0].object;
+		selectedObject.distance = intersects[0].distance;
 		controller.setCurrent(selectedObject);
 		intersects = ray.intersectObject(plane);
 		curPoint = intersects[0].point;
@@ -372,13 +373,11 @@ function onMouseMove (ev) {
 			var ray = getRay(ev);
 			var intersects = ray.intersectObject(plane);
 			if(intersects.length == 0)
-				debugger;
+				console.error("Cound not intersect plane!");
 			var intersectPoint = intersects[ 0 ].point;
+			var planeDist = intersects[ 0 ].distance;
 			var offset = new THREE.Vector3().sub(intersectPoint, curPoint);
-			var cameraPosition = camera.position;
-			selectedObject.updateMatrixWorld();
-			var distRatio = cameraPosition.distanceTo(selectedObject.matrixWorld.getPosition()) /
-				 cameraPosition.distanceTo(intersectPoint);
+			var distRatio = selectedObject.distance / planeDist;
 			selectedObject.onDrag( offset.multiplyScalar(distRatio));
 			curPoint = intersectPoint;
 		} else{ // Rotate the scene
