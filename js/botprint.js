@@ -353,6 +353,7 @@ function onImageLoaded () {
 function onMouseDown(ev) {
 	ev.preventDefault();
 	down = true;
+	
 	sx = ev.clientX;
 	sy = ev.clientY;
 	var ray = getRay (ev);
@@ -365,6 +366,19 @@ function onMouseDown(ev) {
 		intersects = ray.intersectObject(plane);
 		curPoint = intersects[0].point;
 	}
+
+	// var picker = new ObjectPicker(ev, stage, camera);
+	// var intersect = picker.pickFromArray(controller.objects);
+	// if (intersect && intersect.object != plane) {
+		// selectedObject = intersect.object;
+		// selectedObject.distance = intersect.distance;
+		// controller.setCurrent(selectedObject);
+		// intersect = picker.pick(plane);
+		// curPoint = intersect.point;
+	// } else{
+		// sx = ev.clientX;
+		// sy = ev.clientY;		
+	// }
 }
 
 function onMouseMove (ev) {
